@@ -1,8 +1,8 @@
 /* ********************************************************************************* */
 /*                                                                                   */
-/*   nazov projektu:     IDS - 2.cast; Zadanie c.33 -Lekarna                         */
-/*   autori projektu:    Natalia Bubakova (xbubak01) a Alena klimecka (xklime47)     */
-/*   naposledy upravene: 3.4.2022                                                    */
+/*   nazov projektu:     IDS - 3.cast; Zadanie c.33 -Lekarna                         */
+/*   autori projektu:    Natalia Bubakova (xbubak01) a Alena Klimecka (xklime47)     */
+/*   naposledy upravene: 16.4.2022                                                   */
 /*                                                                                   */
 /* ********************************************************************************* */
 
@@ -81,8 +81,8 @@ create table vydany_liek (
 
 insert into liek values ('8595116523847','Paralen 500', null, 50.00);
 insert into liek values ('3664798033953', 'Ibalgin 400', null, 85.00);
-insert into liek values ('7612076354814', 'EXCIPIAL U LIPOLOTIO', 'EXCIPIAL U LIPOLOTIO 40MG/ML ko≈æn√≠ pod√°n√≠ emulze 200ML', 159.00);
-insert into liek values ('8584055999424','Elocom', 'ELOCOM je kortiz√≥nov√Ω hormon√°lny liek urƒçen√Ω na aplik√°ciu na ko≈æu.', 110.00);
+insert into liek values ('7612076354814', 'EXCIPIAL U LIPOLOTIO', 'EXCIPIAL U LIPOLOTIO 40MG/ML koûnÌ pod·nÌ emulze 200ML', 159.00);
+insert into liek values ('8584055999424','Elocom', 'ELOCOM je kortizÛnov˝ hormon·lny liek urËen˝ na aplik·ciu na koûu.', 110.00);
 
 insert into liek_bez_predpisu select ean_lieku from liek where nazov='Paralen 500';
 insert into liek_bez_predpisu values ('3664798033953');
@@ -91,20 +91,18 @@ insert into liek_bez_predpisu values ('7612076354814');
 insert into liek_na_predpis values ('7612076354814');
 insert into liek_na_predpis values ('8584055999424');
 
-insert into pobocka values (default, 'Ba≈°ty 413/2, Brno, 62100', '+420541226066');
-insert into pobocka values (default, 'N√°dra≈æn√≠ 595, Brno, 60200', '+420542211283');
+insert into pobocka values (default, 'Baöty 413/2, Brno, 62100', '+420541226066');
+insert into pobocka values (default, 'N·draûnÌ 595, Brno, 60200', '+420542211283');
 
 insert into mnozstvo values ('8595116523847', 1, 63);
 insert into mnozstvo values ('8595116523847', 2, 55);
 insert into mnozstvo values ('3664798033953', 1, 21);
 insert into mnozstvo values ('3664798033953', 2, 13);
-insert into mnozstvo values ('7612076354814', 1, 27);
 insert into mnozstvo values ('7612076354814', 2, 16);
 insert into mnozstvo values ('8584055999424', 1, 8);
-insert into mnozstvo values ('8584055999424', 2, 6);
 
-insert into poistovna values ('111', 'V≈°eobecn√° zdravotn√≠ poji≈°≈•ovna', 'info@vzp.cz', '+420952222222');
-insert into poistovna values ('201', 'Vojensk√° zdravotn√≠ poji≈°≈•ovna', 'posta@vozp.cz', '+420222929199');
+insert into poistovna values ('111', 'Vöeobecn· zdravotnÌ pojiöùovna', 'info@vzp.cz', '+420952222222');
+insert into poistovna values ('201', 'Vojensk· zdravotnÌ pojiöùovna', 'posta@vozp.cz', '+420222929199');
 
 insert into vyska_prispevku values ('7612076354814', '111', 52.47, 106.53);
 insert into vyska_prispevku values ('7612076354814', '201', 55.42, 103.58);
@@ -113,3 +111,61 @@ insert into vyska_prispevku values ('8584055999424', '201', 67.33, 42.67);
 
 insert into vydany_liek values (default, to_date('2021-06-06', 'YYYY-MM-DD'), '3664798033953', null, null, 1);
 insert into vydany_liek values (default, to_date('2021-06-09', 'YYYY-MM-DD'), null, '8584055999424', '111', 1);
+insert into vydany_liek values (default, to_date('2020-06-09', 'YYYY-MM-DD'), null, '8584055999424', '111', 2);
+
+/* ********* SELECT dotazy *********** */
+
+/* 1) spojeni dvou tabulek */
+/* Jak· je adresa poboËek, kterÈ vydali lÈk dne 06.06.2021 */
+SELECT P.adresa
+FROM pobocka P, vydany_liek V
+WHERE P.id_pobocky = V.kod_pobocky AND V.datum_vydania = to_date('2021-06-06', 'YYYY-MM-DD');
+
+/* 2) spojeni dvou tabulek */
+/* Kolik kus˘ lÈku s EAN oznaËenÌm 3664798033953 m· poboËka N·draûnÌ 595, Brno, 60200 */
+SELECT mnozstvo
+FROM pobocka NATURAL JOIN mnozstvo
+WHERE ean_lieku = '3664798033953' AND adresa = 'N·draûnÌ 595, Brno, 60200';
+
+/* 3) spojeni t¯Ì tabulek */
+/* Jak· je v˝öe p¯ÌzpÏvku pojiöùoven na lÈk EXCIPIAL U LIPOLOTIO */
+SELECT P.kod_poistovne, P.nazov, V.vyska_prispevku
+FROM poistovna P, liek L, vyska_prispevku V
+WHERE P.kod_poistovne = V.kod_poistovne AND V.ean_lieku = L.ean_lieku AND L.nazov = 'EXCIPIAL U LIPOLOTIO';
+
+/* 4) klauzule GROUP BY a agregaËnÌ funkce */
+/* Kolik lÈk˘ bylo vyd·no v jakÈ dny */
+SELECT datum_vydania, COUNT(*)
+FROM vydany_liek
+GROUP BY datum_vydania;
+
+/* 5) klauzule GROUP BY a agregaËnÌ funkce */
+/* Kolik kus˘ jednotliv˝ch lÈku vlastnÌ firma dohromady(na vöech poboËk·ch) */
+SELECT L.nazov, SUM(mnozstvo)
+FROM liek L, mnozstvo M
+WHERE L.ean_lieku=M.ean_lieku
+GROUP BY L.nazov;
+
+/* 6) predik·t EXISTS */
+/* KterÈ lÈky jsou na skladÏ jen na poboËce Baöty 413/2, Brno, 62100 */
+SELECT L.nazov
+FROM liek L, mnozstvo M, pobocka P
+WHERE L.ean_lieku = M.ean_lieku AND M.id_pobocky=P.id_pobocky
+AND adresa='Baöty 413/2, Brno, 62100'
+AND NOT EXISTS 
+    (SELECT * 
+    FROM pobocka P, mnozstvo M
+    WHERE M.id_pobocky=P.id_pobocky AND L.ean_lieku = M.ean_lieku
+    AND adresa<>'Baöty 413/2, Brno, 62100');
+
+/* 7) predik·t IN s vno¯en˝m selectem */
+/* Kter˝ch druh˘ lÈk˘ je na poboËk·ch dohromady vÌce neû 50ks */
+SELECT nazov
+FROM liek
+WHERE ean_lieku IN
+    (SELECT L.ean_lieku
+    FROM liek L, mnozstvo M
+    WHERE L.ean_lieku=M.ean_lieku
+    GROUP BY L.ean_lieku
+    HAVING SUM(mnozstvo) > 50);
+
