@@ -84,6 +84,7 @@ create table vydany_liek (
     id_pobocky int not null references pobocka(id_pobocky)
 );
 
+
 insert into liek values ('8595116523847','Paralen 500', null, 50.00);
 insert into liek values ('3664798033953', 'Ibalgin 400', null, 85.00);
 insert into liek values ('7612076354814', 'EXCIPIAL U LIPOLOTIO', 'EXCIPIAL U LIPOLOTIO 40MG/ML kožní podání emulze 200ML', 159.00);
@@ -181,13 +182,20 @@ WHERE ean_lieku IN
 
 /* ********************** pokrocile objekty schematu databaze *********************** */
 
-/* databazove trigery */
 
-
-
-
-
-
+/* trigger */
+/*
+CREATE OR REPLACE TRIGGER liek_trigger
+    AFTER INSERT
+    ON LIEK
+    FOR EACH ROW
+BEGIN
+    IF :new.LIEK.mnozstvo < 0
+    THEN
+        RAISE_APPLICATION_ERROR(-20000, 'Je potřeba přiobjednat lék!');
+    END IF;
+end;
+*/
 
 /* procedury */
 
@@ -231,6 +239,9 @@ CALL liek_na_sklade(2, '8595116523847');
 CALL liek_na_sklade(2, '1111111111111');
 
 
+
+/*
+-- nestihli sme debugovat kvoli pretazenemu serveru, ale zakladna struktura je kompletna
 
 CREATE OR REPLACE PROCEDURE export_vykazov_pre_poistovnu (arg_kod_poistovne IN VARCHAR) AS
 BEGIN
@@ -278,15 +289,7 @@ END;
 
 CALL export_vykazov_pre_poistovnu ('111');
 CALL export_vykazov_pre_poistovnu ('201');
-
-
-
-
-
-/* index */
-
-
-
+*/
 
 /* EXPLAIN PLAN */
 -- bez pouziti indexu
@@ -368,7 +371,9 @@ GRANT ALL ON vyska_prispevku    TO xklime47;
 GRANT ALL ON vydany_liek        TO xklime47;
 
 GRANT EXECUTE ON liek_na_sklade    TO xklime47;
--- GRANT EXECUTE ON procedure_2    TO xklime47;
+/*
+GRANT EXECUTE ON export_vykazov_pre_poistovnu  TO xklime47;
+*/
 
 GRANT ALL ON vydany_na_pobocke  TO xklime47;
 
