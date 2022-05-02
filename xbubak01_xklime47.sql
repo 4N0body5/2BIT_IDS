@@ -182,6 +182,45 @@ WHERE ean_lieku IN
 
 /* procedury */
 
+-- procedura vypise kolko kusov lieku sa nachadza na danej pobocke spomedzi vsetkych
+-- ak dany liek uz nie je nikde na sklade, upozorni na to
+CREATE OR REPLACE PROCEDURE liek_na_sklade(arg_id_pobocky IN INT, arg_ean_lieku IN VARCHAR) AS
+BEGIN
+    DECLARE CURSOR cursor_lieky is
+        SELECT M.id_pobocky, M.ean_lieku, M.mnozstvo
+        FROM mnozstvo M;
+            id_pobocky mnozstvo.id_pobocky%TYPE;
+            ean_lieku  mnozstvo.ean_lieku%TYPE;
+            pocet_ks   mnozstvo.mnozstvo%TYPE;
+            pocet_ks_na_pobocke INT;
+            celkovy_pocet_ks    INT;
+            BEGIN
+                celkovy_pocet_ks := 0;
+                pocet_ks_na_pobocke := 0;
+                OPEN cursor_lieky;
+                LOOP
+                    FETCH cursor_lieky INTO id_pobocky, ean_lieku, pocet_ks;
+                    EXIT WHEN cursor_lieky%NOTFOUND;
+                    IF arg_ean_lieku = ean_lieku THEN
+                        IF arg_id_pobocky = id_pobocky THEN
+                            pocet_ks_na_pobocke := pocet_ks_na_pobocke + pocet_ks;
+                        END IF;
+                        celkovy_pocet_ks := celkovy_pocet_ks + pocet_ks;
+                    END IF;
+                END LOOP;
+                CLOSE cursor_lieky;
+                IF celkovy_pocet_ks = 0 THEN
+                    DBMS_OUTPUT.put_line('Liek ' || arg_ean_lieku || ' nie je na sklade' );
+                ELSE
+                    DBMS_OUTPUT.put_line('Na pobočke (' || arg_id_pobocky || ') sa nachádza ' || pocet_ks_na_pobocke || ' z ' || celkovy_pocet_ks || ' ks');
+                END IF;
+            END;
+END;
+
+CALL liek_na_sklade(1, '8595116523847');
+CALL liek_na_sklade(2, '8595116523847');
+
+
 /* index */
 
 /* EXPLAIN PLAN */
@@ -234,8 +273,8 @@ GRANT ALL ON poistovna          TO xklime47;
 GRANT ALL ON mnozstvo           TO xklime47;
 GRANT ALL ON vyska_prispevku    TO xklime47;
 GRANT ALL ON vydany_liek        TO xklime47;
---
--- GRANT EXECUTE ON procedure_1    TO xklime47;
+
+GRANT EXECUTE ON liek_na_sklade    TO xklime47;
 -- GRANT EXECUTE ON procedure_2    TO xklime47;
 
 GRANT ALL ON vydany_na_pobocke  TO xklime47;
