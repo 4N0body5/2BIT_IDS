@@ -118,6 +118,9 @@ insert into vyska_prispevku values ('8584055999424', '201', 67.33, 42.67);
 
 insert into vydany_liek values (default, to_date('2021-06-06', 'YYYY-MM-DD'), '3664798033953', null, null, 1);
 insert into vydany_liek values (default, to_date('2021-06-09', 'YYYY-MM-DD'), null, '8584055999424', '111', 1);
+insert into vydany_liek values (default, to_date('2021-06-09', 'YYYY-MM-DD'), null, '8584055999424', '201', 2);
+insert into vydany_liek values (default, to_date('2021-06-13', 'YYYY-MM-DD'), null, '7612076354814', '111', 1);
+insert into vydany_liek values (default, to_date('2021-06-13', 'YYYY-MM-DD'), null, '7612076354814', '111', 1);
 
 /* ********************************** SELECT dotazy ********************************** */
 
@@ -180,56 +183,120 @@ WHERE ean_lieku IN
 
 /* databazove trigery */
 
+
+
+
+
+
+
 /* procedury */
 
 -- procedura vypise kolko kusov lieku sa nachadza na danej pobocke spomedzi vsetkych
 -- ak dany liek uz nie je nikde na sklade, upozorni na to
 CREATE OR REPLACE PROCEDURE liek_na_sklade(arg_id_pobocky IN INT, arg_ean_lieku IN VARCHAR) AS
 BEGIN
-    DECLARE CURSOR cursor_lieky is
+    DECLARE CURSOR cursor_mnozstvo_liekov IS
         SELECT M.id_pobocky, M.ean_lieku, M.mnozstvo
         FROM mnozstvo M;
-            id_pobocky mnozstvo.id_pobocky%TYPE;
-            ean_lieku  mnozstvo.ean_lieku%TYPE;
-            pocet_ks   mnozstvo.mnozstvo%TYPE;
-            pocet_ks_na_pobocke INT;
-            celkovy_pocet_ks    INT;
-            BEGIN
-                celkovy_pocet_ks := 0;
-                pocet_ks_na_pobocke := 0;
-                OPEN cursor_lieky;
-                LOOP
-                    FETCH cursor_lieky INTO id_pobocky, ean_lieku, pocet_ks;
-                    EXIT WHEN cursor_lieky%NOTFOUND;
-                    IF arg_ean_lieku = ean_lieku THEN
-                        IF arg_id_pobocky = id_pobocky THEN
-                            pocet_ks_na_pobocke := pocet_ks_na_pobocke + pocet_ks;
-                        END IF;
-                        celkovy_pocet_ks := celkovy_pocet_ks + pocet_ks;
-                    END IF;
-                END LOOP;
-                CLOSE cursor_lieky;
-                IF celkovy_pocet_ks = 0 THEN
-                    DBMS_OUTPUT.put_line('Liek ' || arg_ean_lieku || ' nie je na sklade' );
-                ELSE
-                    DBMS_OUTPUT.put_line('Na pobočke (' || arg_id_pobocky || ') sa nachádza ' || pocet_ks_na_pobocke || ' z ' || celkovy_pocet_ks || ' ks');
+    id_pobocky mnozstvo.id_pobocky%TYPE;
+    ean_lieku  mnozstvo.ean_lieku%TYPE;
+    pocet_ks   mnozstvo.mnozstvo%TYPE;
+    pocet_ks_na_pobocke INT;
+    celkovy_pocet_ks    INT;
+    BEGIN
+        celkovy_pocet_ks := 0;
+        pocet_ks_na_pobocke := 0;
+        OPEN cursor_mnozstvo_liekov;
+        LOOP
+            FETCH cursor_mnozstvo_liekov INTO id_pobocky, ean_lieku, pocet_ks;
+            EXIT WHEN cursor_mnozstvo_liekov%NOTFOUND;
+            IF arg_ean_lieku = ean_lieku THEN
+                IF arg_id_pobocky = id_pobocky THEN
+                    pocet_ks_na_pobocke := pocet_ks_na_pobocke + pocet_ks;
                 END IF;
-            END;
+                celkovy_pocet_ks := celkovy_pocet_ks + pocet_ks;
+            END IF;
+        END LOOP;
+        CLOSE cursor_mnozstvo_liekov;
+        IF celkovy_pocet_ks = 0 THEN
+            DBMS_OUTPUT.put_line('Liek ' || arg_ean_lieku || ' nie je na sklade' );
+        ELSE
+            DBMS_OUTPUT.put_line('Na pobočke (' || arg_id_pobocky || ') sa nachádza ' || pocet_ks_na_pobocke || ' z ' || celkovy_pocet_ks || ' ks');
+        END IF;
+    END;
 END;
 
 CALL liek_na_sklade(1, '8595116523847');
 CALL liek_na_sklade(2, '8595116523847');
 
 
+
+CREATE OR REPLACE PROCEDURE export_vykazov_pre_poistovnu (arg_kod_poistovne IN VARCHAR) AS
+BEGIN
+    DECLARE CURSOR cursor_lieky_na_poistovnu IS
+        SELECT V.ean_lieku_na_predpis, V.id_vydaneho_lieku, V.datum_vydania, P.vyska_prispevku, P.kod_poistovne
+        FROM vydany_liek V, vyska_prispevku P
+        WHERE ( V.ean_lieku_na_predpis = P.ean_lieku ) AND ( V.kod_poistovne = P.kod_poistovne );
+    ean_lieku           vydany_liek.ean_lieku_na_predpis%TYPE;
+    id_vydaneho_lieku   vydany_liek.id_vydaneho_lieku%TYPE;
+    datum_vydania       vydany_liek.datum_vydania%TYPE;
+    vyska_prispevku     vyska_prispevku.vyska_prispevku%TYPE;
+    kod_poistovne       vyska_prispevku.kod_poistovne%TYPE;
+    pocet_liekov        INT;
+    sucet_prispevku     NUMBER;
+    tmp_vyska_prispevku NUMBER;
+    tmp_ean_lieku       VARCHAR;
+    BEGIN
+        pocet_liekov := 0;
+        sucet_prispevku := 0;
+        tmp_vyska_prispevku := 0;
+        tmp_ean_lieku := '';
+        OPEN cursor_lieky_na_poistovnu;
+        LOOP
+            FETCH cursor_lieky_na_poistovnu INTO ean_lieku, id_vydaneho_lieku, datum_vydania, vyska_prispevku, kod_poistovne;
+            EXIT WHEN cursor_lieky_na_poistovnu%NOTFOUND;
+            IF arg_kod_poistovne = kod_poistovne THEN
+                IF tmp_ean_lieku = ean_lieku THEN
+                    tmp_vyska_prispevku := vyska_prispevku;
+                    pocet_liekov := pocet_liekov + 1;
+                    sucet_prispevku := sucet_prispevku + vyska_prispevku;
+                ELSE
+                    DBMS_OUTPUT.put_line('=> Z lieku typu ' || tmp_ean_lieku || ' s príspevkom vo výške' || tmp_vyska_prispevku || 'bolo vydaných' || pocet_liekov || 'ks; celková úhrada: ' || sucet_prispevku || ' Kč');
+                    tmp_ean_lieku := ean_lieku;
+                    pocet_liekov = 1;
+                    sucet_prispevku := vyska_prispevku;
+                    DBMS_OUTPUT.put_line( '================================================' );
+                    DBMS_OUTPUT.put_line( 'EAN_LIEKU :   id_vydaneho_lieku  datum_vydania' );
+                END IF;
+                DBMS_OUTPUT.put_line( tmp_ean_lieku || ' :   ' || id_vydaneho_lieku || '  ' || datum_vydania );
+            END IF;
+        END LOOP;
+        CLOSE cursor_lieky_na_poistovnu;
+    END;
+END;
+
+CALL export_vykazov_pre_poistovnu (111);
+CALL export_vykazov_pre_poistovnu (201);
+
+
+
+
+
 /* index */
 
+
+
+
 /* EXPLAIN PLAN */
+
+
+
+
 
 
 /* materializovany pohlad */
 
 DROP MATERIALIZED VIEW vydany_na_pobocke;
-
 
 -- log zmien v tabulkach materializovaneho pohladu -> umoznuje FAST REFRESH
 CREATE MATERIALIZED VIEW LOG ON pobocka WITH PRIMARY KEY, ROWID;
@@ -243,7 +310,7 @@ CACHE
 BUILD IMMEDIATE
 REFRESH FAST ON COMMIT
 ENABLE QUERY REWRITE AS
-    SELECT P.id_pobocky, P.adresa, L.nazov, L.ean_lieku, V.datum_vydania, P.ROWID AS rowid_pobocky, V.ROWID AS rowid_vyd_lieku, L.ROWID AS rowid_lieku
+    SELECT P.id_pobocky, P.adresa, L.nazov, L.ean_lieku, V.id_vydaneho_lieku, V.datum_vydania, P.ROWID AS rowid_pobocky, V.ROWID AS rowid_vyd_lieku, L.ROWID AS rowid_lieku
     FROM pobocka P, vydany_liek V, liek L                                                        -- alternativa k JOINu aby fungoval REFRESH ON COMMIT
     WHERE P.id_pobocky = V.id_pobocky AND ( V.ean_lieku_bez_predpisu = L.ean_lieku OR V.ean_lieku_na_predpis = L.ean_lieku);
 
@@ -259,8 +326,11 @@ INSERT INTO vydany_liek VALUES (DEFAULT, TO_DATE('2021-06-13', 'YYYY-MM-DD'), '8
 
 COMMIT;
 
-SELECT adresa, nazov, ean_lieku, datum_vydania FROM vydany_na_pobocke   -- prehladne zobrazenie, pretoze pri priebeznom refreshi to nejde napr. ani zoradit
+SELECT adresa, nazov, ean_lieku, id_vydaneho_lieku, datum_vydania       -- prehladne zobrazenie, pretoze pri priebeznom refreshi to nejde napr. ani zoradit
+FROM vydany_na_pobocke
 ORDER BY id_pobocky ASC, datum_vydania, nazov;                          -- zoradi po skupinkach pobociek, a medzi nimi podla datumu a typu lieku
+
+
 
 /* definicia pristupovych prav */
 
