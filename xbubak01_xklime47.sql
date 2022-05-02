@@ -189,13 +189,7 @@ WHERE ean_lieku IN
 
 /* materializovany pohlad */
 
-DROP MATERIALIZED VIEW LOG ON pobocka;
-DROP MATERIALIZED VIEW LOG ON vydany_liek;
-DROP MATERIALIZED VIEW LOG ON liek;
-
 DROP MATERIALIZED VIEW vydany_na_pobocke;
-
-
 
 
 -- log zmien v tabulkach materializovaneho pohladu -> umoznuje FAST REFRESH
@@ -205,17 +199,29 @@ CREATE MATERIALIZED VIEW LOG ON liek WITH PRIMARY KEY, ROWID;
 
 -- vypise vydane lieky pre kazdu z pobociek
 CREATE MATERIALIZED VIEW vydany_na_pobocke
-    NOLOGGING
-    CACHE
-    BUILD IMMEDIATE
-    REFRESH FAST ON COMMIT
-    ENABLE QUERY REWRITE
-AS
-    SELECT P.id_pobocky, P.adresa, V.datum_vydania, L.ean_lieku, P.ROWID AS rowid_pobocky, V.ROWID AS rowid_vyd_lieku, L.ROWID AS rowid_lieku
-    FROM pobocka P, vydany_liek V, liek L                                       -- alternativa k JOINu aby fungoval REFRESH ON COMMIT
-    WHERE P.id_pobocky = V.id_pobocky AND ( V.ean_lieku_bez_predpisu = L.ean_lieku OR V.ean_lieku_na_predpis = L.ean_lieku)
-    ORDER BY P.id_pobocky ASC, V.datum_vydania, L.nazov;        -- zoradi po skupinkach pobociek, a medzi nimi podla datumu a typu lieku
+NOLOGGING
+CACHE
+BUILD IMMEDIATE
+REFRESH FAST ON COMMIT
+ENABLE QUERY REWRITE AS
+    SELECT P.id_pobocky, P.adresa, L.nazov, L.ean_lieku, V.datum_vydania, P.ROWID AS rowid_pobocky, V.ROWID AS rowid_vyd_lieku, L.ROWID AS rowid_lieku
+    FROM pobocka P, vydany_liek V, liek L                                                        -- alternativa k JOINu aby fungoval REFRESH ON COMMIT
+    WHERE P.id_pobocky = V.id_pobocky AND ( V.ean_lieku_bez_predpisu = L.ean_lieku OR V.ean_lieku_na_predpis = L.ean_lieku);
 
+-- select na vypis materializovaneho pohladu pred updatom
+SELECT * FROM vydany_na_pobocke;
+
+INSERT INTO vydany_liek VALUES (DEFAULT, TO_DATE('2021-06-08', 'YYYY-MM-DD'), '3664798033953', NULL, '111', 1);
+INSERT INTO vydany_liek VALUES (DEFAULT, TO_DATE('2021-06-08', 'YYYY-MM-DD'), '8595116523847', NULL, '111', 1);
+INSERT INTO vydany_liek VALUES (DEFAULT, TO_DATE('2021-06-12', 'YYYY-MM-DD'), '7612076354814', NULL, '111', 2);
+INSERT INTO vydany_liek VALUES (DEFAULT, TO_DATE('2021-06-09', 'YYYY-MM-DD'), '7612076354814', NULL, '201', 1);
+INSERT INTO vydany_liek VALUES (DEFAULT, TO_DATE('2021-06-12', 'YYYY-MM-DD'), '8595116523847', NULL, '201', 2);
+INSERT INTO vydany_liek VALUES (DEFAULT, TO_DATE('2021-06-13', 'YYYY-MM-DD'), '8595116523847', NULL, '201', 2);
+
+COMMIT;
+
+SELECT adresa, nazov, ean_lieku, datum_vydania FROM vydany_na_pobocke   -- prehladne zobrazenie, pretoze pri priebeznom refreshi to nejde napr. ani zoradit
+ORDER BY id_pobocky ASC, datum_vydania, nazov;                          -- zoradi po skupinkach pobociek, a medzi nimi podla datumu a typu lieku
 
 /* definicia pristupovych prav */
 
