@@ -84,6 +84,19 @@ create table vydany_liek (
     id_pobocky int not null references pobocka(id_pobocky)
 );
 
+/* Trigger 
+CREATE OR REPLACE TRIGGER liek_trigger
+    AFTER INSERT
+    ON LIEK
+    FOR EACH ROW
+BEGIN
+    IF :new.LIEK.mnozstvo < 0
+    THEN
+        RAISE_APPLICATION_ERROR(-20000, 'Je potřeba přiobjednat lék!');
+    END IF;
+end;
+*/
+
 insert into liek values ('8595116523847','Paralen 500', null, 50.00);
 insert into liek values ('3664798033953', 'Ibalgin 400', null, 85.00);
 insert into liek values ('7612076354814', 'EXCIPIAL U LIPOLOTIO', 'EXCIPIAL U LIPOLOTIO 40MG/ML kožní podání emulze 200ML', 159.00);
@@ -181,14 +194,6 @@ WHERE ean_lieku IN
 
 /* ********************** pokrocile objekty schematu databaze *********************** */
 
-/* databazove trigery */
-
-
-
-
-
-
-
 /* procedury */
 
 -- procedura vypise kolko kusov lieku sa nachadza na danej pobocke spomedzi vsetkych
@@ -277,13 +282,6 @@ END;
 
 CALL export_vykazov_pre_poistovnu ('111');
 CALL export_vykazov_pre_poistovnu ('201');
-
-
-
-
-
-/* index */
-
 
 
 
