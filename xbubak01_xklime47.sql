@@ -1,8 +1,8 @@
 /* ********************************************************************************* */
 /*                                                                                   */
-/*   nazov projektu:     IDS - 4.cast; Zadanie c.33 -Lekarna                         */
-/*   autori projektu:    Natalia Bubakova (xbubak01) a Alena Klimecka (xklime47)     */
-/*   naposledy upravene: 2.5.2022                                                   */
+/*   nazov projektu:     IDS - 4.cast; Zadanie c.33 - Lekarna                        */
+/*   autori projektu:    Natalia Bubakova (xbubak01) a Alena Klimecká (xklime47)     */
+/*   naposledy upravene: 2.5.2022                                                    */
 /*                                                                                   */
 /* ********************************************************************************* */
 
@@ -125,50 +125,50 @@ insert into vydany_liek values (default, to_date('2021-06-13', 'YYYY-MM-DD'), nu
 /* ********************************** SELECT dotazy ********************************** */
 
 /* 1) spojeni dvou tabulek */
-/* Jak� je adresa pobo�ek, kter� vydali l�k dne 06.06.2021 */
+/* Jaká je adresa poboček, které vydali lék dne 06.06.2021 */
 SELECT P.adresa
 FROM pobocka P, vydany_liek V
 WHERE P.id_pobocky = V.id_pobocky AND V.datum_vydania = to_date('2021-06-06', 'YYYY-MM-DD');
 
 /* 2) spojeni dvou tabulek */
-/* Kolik kus� l�ku s EAN ozna�en�m 3664798033953 m� pobo�ka N�dra�n� 595, Brno, 60200 */
+/* Kolik kusů léku s EAN označením 3664798033953 má pobočka Nádražní 595, Brno, 60200 */
 SELECT mnozstvo
 FROM pobocka NATURAL JOIN mnozstvo
-WHERE ean_lieku = '3664798033953' AND adresa = 'N�dra�n� 595, Brno, 60200';
+WHERE ean_lieku = '3664798033953' AND adresa = 'Nádražní 595, Brno, 60200';
 
-/* 3) spojeni t�� tabulek */
-/* Jak� je v��e p��zp�vku poji��oven na l�k EXCIPIAL U LIPOLOTIO */
+/* 3) spojeni tří tabulek */
+/* Jaká je víše přízpěvku pojišťoven na lék EXCIPIAL U LIPOLOTIO */
 SELECT P.kod_poistovne, P.nazov, V.vyska_prispevku
 FROM poistovna P, liek L, vyska_prispevku V
 WHERE P.kod_poistovne = V.kod_poistovne AND V.ean_lieku = L.ean_lieku AND L.nazov = 'EXCIPIAL U LIPOLOTIO';
 
-/* 4) klauzule GROUP BY a agrega�n� funkce */
-/* Kolik l�k� bylo vyd�no v jak� dny */
+/* 4) klauzule GROUP BY a agregační funkce */
+/* Kolik léků bylo vydáno v jaké dny */
 SELECT datum_vydania, COUNT(*)
 FROM vydany_liek
 GROUP BY datum_vydania;
 
-/* 5) klauzule GROUP BY a agrega�n� funkce */
-/* Kolik kus� jednotliv�ch l�ku vlastn� firma dohromady(na v�ech pobo�k�ch) */
+/* 5) klauzule GROUP BY a agregační funkce */
+/* Kolik kusů jednotlivých léku vlastní firma dohromady(na všech pobočkách) */
 SELECT L.nazov, SUM(mnozstvo)
 FROM liek L, mnozstvo M
 WHERE L.ean_lieku=M.ean_lieku
 GROUP BY L.nazov;
 
-/* 6) predik�t EXISTS */
-/* Kter� l�ky jsou na sklad� jen na pobo�ce Ba�ty 413/2, Brno, 62100 */
+/* 6) predikát EXISTS */
+/* Které léky jsou na skladě jen na pobočce Bašty 413/2, Brno, 62100 */
 SELECT L.nazov
 FROM liek L, mnozstvo M, pobocka P
 WHERE L.ean_lieku = M.ean_lieku AND M.id_pobocky=P.id_pobocky
-AND adresa='Ba�ty 413/2, Brno, 62100'
+AND adresa='Bašty 413/2, Brno, 62100'
 AND NOT EXISTS 
     (SELECT * 
     FROM pobocka P, mnozstvo M
     WHERE M.id_pobocky=P.id_pobocky AND L.ean_lieku = M.ean_lieku
-    AND adresa<>'Ba�ty 413/2, Brno, 62100');
+    AND adresa<>'Bašty 413/2, Brno, 62100');
 
-/* 7) predik�t IN s vno�en�m selectem */
-/* Kter�ch druh� l�k� je na pobo�k�ch dohromady v�ce ne� 50ks */
+/* 7) predikát IN s vnořeným selectem */
+/* Kterých druhů léků je na pobočkách dohromady více než 50ks */
 SELECT nazov
 FROM liek
 WHERE ean_lieku IN
@@ -288,7 +288,29 @@ CALL export_vykazov_pre_poistovnu (201);
 
 
 /* EXPLAIN PLAN */
+-- bez pouziti indexu
+EXPLAIN PLAN FOR
+SELECT L.nazov, SUM(mnozstvo)
+FROM liek L, mnozstvo M
+WHERE L.ean_lieku=M.ean_lieku
+GROUP BY L.nazov;
 
+SELECT plan_table_output FROM TABLE(dbms_xplan.display());
+
+-- s pouzitim indexu
+CREATE INDEX liek_index ON liek (ean_lieku, nazov, popis, cena);
+CREATE INDEX mnozstvo_index ON mnozstvo (ean_lieku, id_pobocky, mnozstvo);
+
+EXPLAIN PLAN FOR
+SELECT L.nazov, SUM(mnozstvo)
+FROM liek L, mnozstvo M
+WHERE L.ean_lieku=M.ean_lieku
+GROUP BY L.nazov;
+
+SELECT plan_table_output FROM TABLE(dbms_xplan.display());
+
+DROP INDEX liek_index;
+DROP INDEX mnozstvo_index;
 
 
 
