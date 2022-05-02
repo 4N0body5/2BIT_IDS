@@ -228,6 +228,7 @@ END;
 
 CALL liek_na_sklade(1, '8595116523847');
 CALL liek_na_sklade(2, '8595116523847');
+CALL liek_na_sklade(2, '1111111111111');
 
 
 
@@ -263,7 +264,7 @@ BEGIN
                 ELSE
                     DBMS_OUTPUT.put_line('=> Z lieku typu ' || tmp_ean_lieku || ' s príspevkom vo výške' || tmp_vyska_prispevku || 'bolo vydaných' || pocet_liekov || 'ks; celková úhrada: ' || sucet_prispevku || ' Kč');
                     tmp_ean_lieku := ean_lieku;
-                    pocet_liekov = 1;
+                    pocet_liekov := 1;
                     sucet_prispevku := vyska_prispevku;
                     DBMS_OUTPUT.put_line( '================================================' );
                     DBMS_OUTPUT.put_line( 'EAN_LIEKU :   id_vydaneho_lieku  datum_vydania' );
@@ -275,8 +276,8 @@ BEGIN
     END;
 END;
 
-CALL export_vykazov_pre_poistovnu (111);
-CALL export_vykazov_pre_poistovnu (201);
+CALL export_vykazov_pre_poistovnu ('111');
+CALL export_vykazov_pre_poistovnu ('201');
 
 
 
