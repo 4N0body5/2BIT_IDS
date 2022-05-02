@@ -1,8 +1,8 @@
 /* ********************************************************************************* */
 /*                                                                                   */
-/*   nazov projektu:     IDS - 4.cast; Zadanie c.33 -Lekarna                         */
-/*   autori projektu:    Natalia Bubakova (xbubak01) a Alena Klimecka (xklime47)     */
-/*   naposledy upravene: 2.5.2022                                                   */
+/*   nazov projektu:     IDS - 4.cast; Zadanie c.33 - Lekarna                        */
+/*   autori projektu:    Natalia Bubakova (xbubak01) a Alena Klimecká (xklime47)     */
+/*   naposledy upravene: 2.5.2022                                                    */
 /*                                                                                   */
 /* ********************************************************************************* */
 
@@ -131,7 +131,7 @@ WHERE P.id_pobocky = V.id_pobocky AND V.datum_vydania = to_date('2021-06-06', 'Y
 /* Kolik kusů léku s EAN označením 3664798033953 má pobočka Nádražní 595, Brno, 60200 */
 SELECT mnozstvo
 FROM pobocka NATURAL JOIN mnozstvo
-WHERE ean_lieku = '3664798033953' AND adresa = 'N�dra�n� 595, Brno, 60200';
+WHERE ean_lieku = '3664798033953' AND adresa = 'Nádražní 595, Brno, 60200';
 
 /* 3) spojeni tří tabulek */
 /* Jaká je víše přízpěvku pojišťoven na lék EXCIPIAL U LIPOLOTIO */
@@ -157,12 +157,12 @@ GROUP BY L.nazov;
 SELECT L.nazov
 FROM liek L, mnozstvo M, pobocka P
 WHERE L.ean_lieku = M.ean_lieku AND M.id_pobocky=P.id_pobocky
-AND adresa='Ba�ty 413/2, Brno, 62100'
+AND adresa='Bašty 413/2, Brno, 62100'
 AND NOT EXISTS 
     (SELECT * 
     FROM pobocka P, mnozstvo M
     WHERE M.id_pobocky=P.id_pobocky AND L.ean_lieku = M.ean_lieku
-    AND adresa<>'Ba�ty 413/2, Brno, 62100');
+    AND adresa<>'Bašty 413/2, Brno, 62100');
 
 /* 7) predikát IN s vnořeným selectem */
 /* Kterých druhů léků je na pobočkách dohromady více než 50ks */
