@@ -239,10 +239,6 @@ CALL liek_na_sklade(2, '8595116523847');
 CALL liek_na_sklade(2, '1111111111111');
 
 
-
-/*
--- nestihli sme debugovat kvoli pretazenemu serveru, ale zakladna struktura je kompletna
-
 CREATE OR REPLACE PROCEDURE export_vykazov_pre_poistovnu (arg_kod_poistovne IN VARCHAR) AS
 BEGIN
     DECLARE CURSOR cursor_lieky_na_poistovnu IS
@@ -252,44 +248,48 @@ BEGIN
     ean_lieku           vydany_liek.ean_lieku_na_predpis%TYPE;
     id_vydaneho_lieku   vydany_liek.id_vydaneho_lieku%TYPE;
     datum_vydania       vydany_liek.datum_vydania%TYPE;
-    vyska_prispevku     vyska_prispevku.vyska_prispevku%TYPE;
+    vyska_prispevku_     vyska_prispevku.vyska_prispevku%TYPE;
     kod_poistovne       vyska_prispevku.kod_poistovne%TYPE;
     pocet_liekov        INT;
     sucet_prispevku     NUMBER;
     tmp_vyska_prispevku NUMBER;
-    tmp_ean_lieku       VARCHAR;
+    tmp_ean_lieku       VARCHAR(13);
     BEGIN
         pocet_liekov := 0;
         sucet_prispevku := 0;
         tmp_vyska_prispevku := 0;
-        tmp_ean_lieku := '';
+        tmp_ean_lieku := ' ';
         OPEN cursor_lieky_na_poistovnu;
         LOOP
-            FETCH cursor_lieky_na_poistovnu INTO ean_lieku, id_vydaneho_lieku, datum_vydania, vyska_prispevku, kod_poistovne;
+            FETCH cursor_lieky_na_poistovnu INTO ean_lieku, id_vydaneho_lieku, datum_vydania, vyska_prispevku_, kod_poistovne;
             EXIT WHEN cursor_lieky_na_poistovnu%NOTFOUND;
             IF arg_kod_poistovne = kod_poistovne THEN
                 IF tmp_ean_lieku = ean_lieku THEN
-                    tmp_vyska_prispevku := vyska_prispevku;
                     pocet_liekov := pocet_liekov + 1;
-                    sucet_prispevku := sucet_prispevku + vyska_prispevku;
+                    sucet_prispevku := sucet_prispevku + vyska_prispevku_;
                 ELSE
-                    DBMS_OUTPUT.put_line('=> Z lieku typu ' || tmp_ean_lieku || ' s príspevkom vo výške' || tmp_vyska_prispevku || 'bolo vydaných' || pocet_liekov || 'ks; celková úhrada: ' || sucet_prispevku || ' Kč');
+                    IF tmp_ean_lieku != ' ' THEN
+                    DBMS_OUTPUT.put_line('=> Z lieku typu ' || tmp_ean_lieku || ' s príspevkom vo výške ' || tmp_vyska_prispevku || ' bolo vydaných ' || pocet_liekov || ' ks; CELKOVÁ ÚHRADA: ' || sucet_prispevku || ' Kč');
+                    END IF;
                     tmp_ean_lieku := ean_lieku;
                     pocet_liekov := 1;
-                    sucet_prispevku := vyska_prispevku;
+                    tmp_vyska_prispevku := vyska_prispevku_;
+                    sucet_prispevku := vyska_prispevku_;
                     DBMS_OUTPUT.put_line( '================================================' );
-                    DBMS_OUTPUT.put_line( 'EAN_LIEKU :   id_vydaneho_lieku  datum_vydania' );
+                    DBMS_OUTPUT.put_line( 'EAN_LIEKU     :   id_vydaneho_lieku  datum_vydania' );
                 END IF;
-                DBMS_OUTPUT.put_line( tmp_ean_lieku || ' :   ' || id_vydaneho_lieku || '  ' || datum_vydania );
+                DBMS_OUTPUT.put_line( tmp_ean_lieku || ' :   ' || id_vydaneho_lieku || '                  ' || datum_vydania );
             END IF;
         END LOOP;
         CLOSE cursor_lieky_na_poistovnu;
+        DBMS_OUTPUT.put_line('=> Z lieku typu ' || tmp_ean_lieku || ' s príspevkom vo výške ' || tmp_vyska_prispevku || ' bolo vydaných ' || pocet_liekov || ' ks; CELKOVÁ ÚHRADA: ' || sucet_prispevku || ' Kč');
+        DBMS_OUTPUT.put_line( '================================================' );
     END;
 END;
 
 CALL export_vykazov_pre_poistovnu ('111');
 CALL export_vykazov_pre_poistovnu ('201');
-*/
+
 
 /* EXPLAIN PLAN */
 -- bez pouziti indexu
@@ -371,9 +371,8 @@ GRANT ALL ON vyska_prispevku    TO xklime47;
 GRANT ALL ON vydany_liek        TO xklime47;
 
 GRANT EXECUTE ON liek_na_sklade    TO xklime47;
-/*
 GRANT EXECUTE ON export_vykazov_pre_poistovnu  TO xklime47;
-*/
+
 
 GRANT ALL ON vydany_na_pobocke  TO xklime47;
 
